@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/editor/editor.main.js" integrity="sha512-Rvm80pldXwjZQPHcW9Dx3U8pygTafC25yXwrxrPC6ZuNVgBsR2BN2pFAU2ImvYYeFcUaKo7bRcf7KxHD+LMp6w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"
+        integrity="sha512-ZG31AN9z/CQD1YDDAK4RUAvogwbJHv6bHrumrnMLzdCrVu4HeAqrUX7Jsal/cbUwXGfaMUNmQU04tQ8XXl5Znw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js" integrity="sha512-b+nQTCdtTBIRIbraqNEwsjB6UvL3UEMkXnhzd8awtCYh0Kcsjl9uEgwVFVbhoj3uu1DO1ZMacNvLoyJJiNfcvg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="registers">
+        <div class="register">
+            <span class="register-name">ACC</span>
+            <span class="register-value">0</span>
+        </div>
+        <div class="register">
+            <span class="register-name">BAK</span>
+            <span class="register-value">0</span>
+        </div>
+        <div class="register">
+            <span class="register-name">PC</span>
+            <span class="register-value">0</span>
+        </div>
+        <div class="vs"></div>
+        <div class="controls">
+            <button class="control" id="run">
+                <span class="icon">
+                    <i class="fas fa-play"></i>
+                </span>
+                <span class="label">Run</span>
+                <span class="hotkey">F5</span>
+            </button>
+            <button class="control" id="run-bp">
+                <span class="icon">
+                    <i class="fa-solid fa-bug"></i>
+                </span>
+                <span class="label">Debug</span>
+                <span class="hotkey">F5</span>
+            </button>
+            <button class="control" id="step">
+                <span class="icon">
+                    <i class="fas fa-forward-step"></i>
+                </span>
+                <span class="label">Step</span>
+                <span class="hotkey">F5</span>
+            </button>
+            <button class="control" id="pause">
+                <span class="icon">
+                    <i class="fas fa-pause"></i>
+                </span>
+                <span class="label">Step</span>
+                <span class="hotkey">F5</span>
+            </button>
+            <button class="control" id="reset">
+                <span class="icon">
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                </span>
+                <span class="label">Reset</span>
+                <span class="hotkey">F5</span>
+            </button>
+        </div>
+    </div>
+    <div id="editor" style="height: 100%"></div>
+</body>
+
+<style>
+    html,
+    body,
+    #container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .registers {
+        display: flex;
+        flex-direction: row;
+        padding: 0.33rem;
+        justify-content: space-evenly;
+    }
+
+    .registers .register {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        width: 50px;
+        height: 50px;
+        border: 1px solid black;
+        border-radius: 8px;
+    }
+
+    .registers .register .register-name {
+        font-weight: bolder;
+        border-bottom: 1px solid black;
+        width: 100%;
+        text-align: center;
+    }
+
+    .registers .register .register-value {
+        display: flex;
+        height: 100%;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        vertical-align: center;
+    }
+
+    .registers .controls {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-evenly;
+        align-items: center;
+    }
+
+    .registers .controls .control {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-width: 50px;
+        height: 50px;
+        max-width: 125px;
+        border-radius: 8px;
+        border: 1px solid black;
+        background: none;
+        position: relative;
+
+        transition: 1000ms cubic-bezier(0.075, 0.82, 0.165, 1)
+    }
+
+    .registers .controls .control .label {
+        font-size: 12px;
+        font-weight: bold;
+        margin-top: 4px;
+    }
+
+    .registers .controls .control .icon {
+        margin-right: 0;
+        font-size: 18px;
+    }
+
+    .registers .controls .control .hotkey {
+        position: absolute;
+        top: 1px;
+        right: 4px;
+        font-size: 9px; /* Make it smaller */
+        font-weight: bold;
+    }
+
+    .registers .controls .control:hover {
+        background: #f0f0f0;
+    }
+
+    .vs {
+        width: 1px; /* Thickness of the separator */
+        background-color: black; /* Color of the separator */
+        height: 50px; /* Match the height of registers and controls */
+        align-self: center; /* Ensures it aligns properly in flex container */
+        margin: 0 2px; /* Adjust spacing between registers and controls */
+    }
+</style>
+<script defer>
+    let MONACO_IS_READY = false;
+    let EDITOR = null;
+    let MONACO = null;
+
+
+    require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@latest/min/vs' } });
+    window.MonacoEnvironment = { getWorkerUrl: () => proxy };
+    let proxy = URL.createObjectURL(new Blob(
+        [`
+            self.MonacoEnvironment = {
+                baseUrl: 'https://unpkg.com/monaco-editor@latest/min/'
+            };
+            importScripts('https://unpkg.com/monaco-editor@latest/min/vs/base/worker/workerMain.js');
+        `],
+        { type: 'text/javascript' }
+    ));
+
+    require(["vs/editor/editor.main"], function () {
+        monaco.languages.register({ id: 'tislang' });
+
+        // Register a tokens provider for the language
+        monaco.languages.setMonarchTokensProvider('tislang', {
+            symbols: /[=<>!~?:&|+\-*\/^%]+/,
+
+            tokenizer: {
+                root: [
+                    // Labels (must end with a colon, with optional leading spaces)
+                    [/^\s*([A-Za-z_][\w]*)(:)/, ['type.identifier', 'delimiter']],
+
+                    // Keywords (instructions)
+                    [/\b(?:NOP|MOV|SWP|SAV|ADD|SUB|NEG|JMP|JEZ|JNZ|JGZ|JLZ|JRO)\b/, 'keyword'],
+
+                    // Label references (after JMP, JEZ, JGZ, etc.)
+                    [/\b(?:JMP|JEZ|JNZ|JGZ|JLZ|JRO)\s+([A-Za-z_][\w]*)\b/, ['keyword', 'type.identifier']],
+
+                    // Registers (Only ACC, BAK is not accessible directly)
+                    [/\bACC\b/, 'variable'],
+                    [/\bBAK\b/, 'invalid'],
+
+                    // Memory addresses ($ followed by digits or hex values)
+                    [/\$0x[0-9a-fA-F]+\b/, 'storage.hex'], // Hex memory address ($0xABCD)
+                    [/\$\d+\b/, 'storage.number'],         // Decimal memory address ($1234)
+
+                    // Literals (numeric constants)
+                    [/\b\d+\b/, 'number'],                 // 1234 (Decimal)
+                    [/0x[0-9a-fA-F]+\b/, 'number.hex'],    // 0xABCD (Hex)
+
+                    // Comments
+                    [/#.*/, 'comment'],
+
+                    // Whitespace
+                    [/[ \t\r\n]+/, 'white'],
+                ]
+            }
+        });
+
+
+        monaco.editor.defineTheme("tis-theme", {
+            base: "vs-dark",
+            inherit: true,
+            rules: [
+                { token: "keyword", foreground: "ffff00", background: "ff0000", fontStyle: "bold" },
+                { token: "variable", foreground: "A0F0FF" },
+                { token: "storage.number", foreground: "FFAA00"},
+                { token: "storage.hex", foreground: "FFAA00"},
+                { token: "number", foreground: "FF8A00"},
+                { token: "number.hex", foreground: "FF8A00"},
+                { token: "comment", foreground: "20a872"},
+                { token: "type.identifier", foreground: "FF00FF"},
+                { token: "invalid", foreground: "FF0000", fontStyle: "italic underline" },
+            ],
+            colors: {
+                "editor.foreground": "#A250A2",
+            },
+        });
+
+        // Register a completion item provider for the new language
+        monaco.languages.registerCompletionItemProvider("tislang", {
+            provideCompletionItems: (model, position) => {
+                var word = model.getWordUntilPosition(position);
+                var range = {
+                    startLineNumber: position.lineNumber,
+                    endLineNumber: position.lineNumber,
+                    startColumn: word.startColumn,
+                    endColumn: word.endColumn,
+                };
+                var suggestions = [
+                    {
+                        label: "MOV",
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "MOV ${1:source} ${2:destination}",
+                        insertTextRules:
+                            monaco.languages.CompletionItemInsertTextRule
+                                .InsertAsSnippet,
+                        range: range,
+                    },
+                    {
+                        label: 'NOP',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "NOP",
+                        range: range
+                    },
+                    {
+                        label: 'SWP',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "SWP",
+                        range: range
+                    },
+                    {
+                        label: 'SAV',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "SAV",
+                        range: range
+                    },
+                    {
+                        label: 'ADD',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "ADD ${1:source}",
+                        insertTextRules:
+                            monaco.languages.CompletionItemInsertTextRule
+                                .InsertAsSnippet,
+                        range: range
+                    },
+                    {
+                        label: 'SUB',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "SUB ${1:source}",
+                        insertTextRules:
+                            monaco.languages.CompletionItemInsertTextRule
+                                .InsertAsSnippet,
+                        range: range
+                    },
+                    {
+                        label: 'NEG',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "NEG ${1:source}",
+                        insertTextRules:
+                            monaco.languages.CompletionItemInsertTextRule
+                                .InsertAsSnippet,
+                        range: range
+                    },
+                    {
+                        label: 'JMP',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "JMP ${1:label}",
+                        insertTextRules:
+                            monaco.languages.CompletionItemInsertTextRule
+                                .InsertAsSnippet,
+                        range: range
+                    },
+                    {
+                        label: 'JEZ',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "JEZ ${1:label}",
+                        insertTextRules:
+                            monaco.languages.CompletionItemInsertTextRule
+                                .InsertAsSnippet,
+                        range: range
+                    },
+                    {
+                        label: 'JNZ',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "JNZ ${1:label}",
+                        insertTextRules:
+                            monaco.languages.CompletionItemInsertTextRule
+                                .InsertAsSnippet,
+                        range: range
+                    },
+                    {
+                        label: 'JGZ',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "JGZ ${1:label}",
+                        insertTextRules:
+                            monaco.languages.CompletionItemInsertTextRule
+                                .InsertAsSnippet,
+                        range: range
+                    },
+                    {
+                        label: 'JLZ',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "JLZ ${1:label}",
+                        insertTextRules:
+                            monaco.languages.CompletionItemInsertTextRule
+                                .InsertAsSnippet,
+                        range: range
+                    },
+                    {
+                        label: 'JRO',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "JRO ${1:offset}",
+                        insertTextRules:
+                            monaco.languages.CompletionItemInsertTextRule
+                                .InsertAsSnippet,
+                        range: range
+                    },
+                ];
+                return { suggestions: suggestions };
+            },
+        });
+
+        let editor = monaco.editor.create(document.getElementById('editor'), {
+            value: [
+                '   MOV     1234        ACC         # Move 1234 to ACC register',
+                '   MOV     0xff1234    ACC         # Move 0xff1234 to ACC register',
+                '   MOV     $1234       ACC         # Move value at memory address 1234 to ACC register',
+                '   MOV     $0xff1234   ACC         # Move value at memory address 0xff1234 to ACC register',
+                '   MOV     ACC         $1234       # Move value in ACC register to memory address 1234',
+                '   MOV     ACC         $0xff1234   # Move value in ACC register to memory address 0xff1234',
+                '   SWP                             # Swap the values in ACC and BAK registers',
+                '   ADD     ACC',
+                '   MOV     ACC         $0x3',
+                '   MOV     BAK         ACC',
+                '   NOP',
+                '',
+                'EXAMPLE_LABEL:                     # Label definition',
+                '   MOV     0x3         ACC',
+                '   ADD     ACC',
+                '   JEZ EXAMPLE_LABEL',
+                '',
+                'FINISH:                            # Another label definition',
+                '   MOV     0x3         ACC',
+                '   ADD     ACC',
+                '   JGZ EXAMPLE_LABEL',
+            ].join('\n'),
+            language: 'tislang',
+            theme: 'tis-theme',
+        });
+
+        EDITOR = editor;
+        MONACO = monaco;
+        MONACO_IS_READY = true;
+    });
+</script>
+</html>
