@@ -9,7 +9,7 @@
         integrity="sha512-ZG31AN9z/CQD1YDDAK4RUAvogwbJHv6bHrumrnMLzdCrVu4HeAqrUX7Jsal/cbUwXGfaMUNmQU04tQ8XXl5Znw=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js" integrity="sha512-b+nQTCdtTBIRIbraqNEwsjB6UvL3UEMkXnhzd8awtCYh0Kcsjl9uEgwVFVbhoj3uu1DO1ZMacNvLoyJJiNfcvg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
+    <script src="vm.js"></script>
     <title>Document</title>
 </head>
 
@@ -66,13 +66,13 @@
                 </span>
                 <span class="label">Save Program</span>
             </button>
-            <button class="control" id="docs">
+            <button class="control" id="save-ram">
                 <span class="icon">
                     <i class="fa-solid fa-memory"></i>
                 </span>
                 <span class="label">Save From RAM</span>
             </button>
-            <button class="control" id="docs">
+            <button class="control" id="load-ram">
                 <span class="icon">
                     <i class="fa-solid fa-memory"></i>
                 </span>
@@ -83,23 +83,27 @@
         <div class="registers">
             <button class="register">
                 <span class="register-name">ACC</span>
-                <span class="register-value">12418297</span>
+                <span id="REG-ACC-HOLDER" class="register-value">0</span>
             </button>
             <button class="register">
                 <span class="register-name">BAK</span>
-                <span class="register-value">0</span>
+                <span id="REG-BAK-HOLDER" class="register-value">0</span>
             </button>
             <button class="register">
                 <span class="register-name">GPR</span>
-                <span class="register-value">0</span>
+                <span id="REG-GPR-HOLDER" class="register-value">0</span>
+            </button>
+            <button class="register">
+                <span class="register-name">DSP</span>
+                <span id="REG-DSP-HOLDER" class="register-value">0</span>
             </button>
             <button class="register">
                 <span class="register-name">STC</span>
-                <span class="register-value">0</span>
+                <span id="REG-STC-HOLDER" class="register-value">0</span>
             </button>
             <button class="register">
                 <span class="register-name">PRC</span>
-                <span class="register-value">0</span>
+                <span id="REG-PRC-HOLDER" class="register-value">0</span>
             </button>
         </div>
     </div>
@@ -374,43 +378,146 @@
         align-self: center; /* Ensures it aligns properly in flex container */
         margin: 0 2px; /* Adjust spacing between registers and controls */
     }
+
+    .myGlyphMarginClass {
+        background: red;
+    }
+    .myContentClass {
+        /* Make sure to use transparent colors for the selection to work */
+        background: rgba(173, 216, 230, 0.5);
+    }
+
 </style>
 <script defer>
     let MONACO_IS_READY = false;
     let EDITOR = null;
     let MONACO = null;
 
-    let REGISTER_STATE = {
-        value_ACC: 0,
-        value_BAK: 0,
-        value_PC: 0,
-        mode_ACC: "dec",
-        mode_BAK: "dec",
-        mode_PC: "dec",
-        hover_ACC: "none",
-        hover_BAK: "none",
-        hover_PC: "none",
-    }
+    function prepareAfterMonaco() {
+        const btn_run = document.getElementById("run");
+        const btn_pause = document.getElementById("pause");
+        const btn_step = document.getElementById("step");
+        const btn_reset = document.getElementById("reset");
+        const btn_runbp = document.getElementById("run-bp");
+        const btn_docs = document.getElementById("docs");
+        const btn_save = document.getElementById("save");
+        const btn_saveram = document.getElementById("save-ram");
+        const btn_loadram = document.getElementById("load-ram");
+    
+        setTimeout(async () => {
+            const source = EDITOR.getValue();
+            const machineCode = assembleSource(source);
+            VM_start(machineCode);
+            console.log(PROGRAM)
+        }, 1000);
+        btn_run.onclick = () => {
+            // get source from editor
+            console.log("Running");
+            const source = EDITOR.getValue();
+            const machineCode = assembleSource(source);
+            VM_start(machineCode);
+        };
+        btn_pause.onclick = () => {
+            if(STATE === "RUNNING") VM_stop();
+            else VM_continue();
+        };
+        btn_step.onclick = () => {
+    
+        };
+        btn_reset.onclick = () => {
+            VM_reset();
+        };
+        btn_runbp.onclick = () => {
+    
+        };
+        btn_docs.onclick = () => {
+    
+        };
+        btn_save.onclick = () => {
+    
+        };
+        btn_saveram.onclick = () => {
+    
+        };
+        btn_loadram.onclick = () => {
+    
+        };
 
-    let STACK = new Array(0).fill(0);
-
-    /* PREPARE DISPLAY */ (() => {
-        const container = document.getElementById('display');
-        let row = "";
-
-        for(let i=0; i<256; i++) {
-            let cells = "<div class='row'>";
-            for(let j=0; j<256; j++) {
-                const coord = i * 256 + j;
-                cells += `<div class='cell' id='${coord}'></div>`;
-            }
-            cells += "</div>";
-
-            row += cells;
+        let decorations = EDITOR.createDecorationsCollection([]);
+        function highlightLine() {
+            const line = REGISTERS.PRC.value;
+            decorations.clear()
+            decorations = EDITOR.createDecorationsCollection([
+                {
+                    range: new monaco.Range(line+1, 1, line+1, 1),
+                    options: {
+                        isWholeLine: true,
+                        className: "myContentClass",
+                        glyphMarginClassName: "myGlyphMarginClass",
+                    },
+                },
+            ]);
         }
 
-        container.innerHTML = row;
-    })();
+        function updateStack() {
+            const tmp = `<div id="row">
+                <div id="address">0</div>
+                <div id="value">0x0000000000000000</div>
+            </div>`
+        }
+
+        REGISTERS.ACC.addHandler(async () => { 
+            document.getElementById("REG-ACC-HOLDER").innerText = REGISTERS.ACC.value;
+            highlightLine();
+        });
+        REGISTERS.BAK.addHandler(async () => {
+            document.getElementById("REG-BAK-HOLDER").innerText = REGISTERS.BAK.value;
+            highlightLine();
+        });
+        REGISTERS.GPR.addHandler(async () => {
+            document.getElementById("REG-GPR-HOLDER").innerText = REGISTERS.GPR.value;
+            highlightLine();
+        });
+        REGISTERS.DSP.addHandler(async () => {
+            document.getElementById("REG-DSP-HOLDER").innerText = REGISTERS.DSP.value;
+            highlightLine();
+        });
+        REGISTERS.DSP.displayHandler = async (e) => {
+            const {coordinate, r, g, b} = e;
+            const cell = document.getElementById(`disp-pixel-${coordinate}`);
+            console.log(cell);
+            if(cell) cell.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+        }
+        REGISTERS.STC.addHandler(async () => {
+            document.getElementById("REG-STC-HOLDER").innerText = REGISTERS.STC.value;
+            highlightLine();
+        });
+        REGISTERS.PRC.addHandler(async () => {
+            document.getElementById("REG-PRC-HOLDER").innerText = REGISTERS.PRC.value;
+            highlightLine();
+        });
+
+        STACK.push_event_driver = updateStack;
+        STACK.pop_event_driver = updateStack;
+
+        /* PREPARE DISPLAY */ (() => {
+            const container = document.getElementById('display');
+            let row = "";
+    
+            for(let i=0; i<256; i++) {
+                let cells = "<div class='row'>";
+                for(let j=0; j<256; j++) {
+                    const coord = i * 256 + j;
+                    cells += `<div class='cell' id='disp-pixel-${coord}'></div>`;
+                }
+                cells += "</div>";
+    
+                row += cells;
+            }
+    
+            container.innerHTML = row;
+        })();
+    }
 
     require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@latest/min/vs' } });
     window.MonacoEnvironment = { getWorkerUrl: () => proxy };
@@ -437,13 +544,13 @@
                     [/^\s*([A-Za-z_][\w]*)(:)/, ['type.identifier', 'delimiter']],
 
                     // Keywords (instructions)
-                    [/\b(?:NOP|MOV|PUSH|POP|SWP|SAV|ADD|SUB|NEG|JMP|JEZ|JNZ|JGZ|JLZ|JRO|nop|mov|push|pop|swp|sav|add|sub|neg|jmp|jez|jnz|jgz|jlz|jro)\b/, 'keyword'],
+                    [/\b(?:NOP|MOV|PUSH|POP|SWP|SAV|ADD|SUB|NEG|JMP|JEZ|JNZ|JGZ|JLZ|JRO|HALT|nop|mov|push|pop|swp|sav|add|sub|neg|jmp|jez|jnz|jgz|jlz|jro|halt)\b/, 'keyword'],
 
                     // Label references (after JMP, JEZ, JGZ, etc.)
                     [/\b(?:JMP|JEZ|JNZ|JGZ|JLZ|JRO|jmp|jez|jnz|jgz|jlz|jro)\s+([A-Za-z_][\w]*)\b/, ['keyword', 'type.identifier']],
 
                     // Registers (Only ACC, BAK is not accessible directly)
-                    [/\b(ACC)\b/, 'variable'],
+                    [/\b(ACC|GPR|DSP|STC)\b/, 'variable'],
                     [/\b(BAK)\b/, 'invalid'],
 
                     // Memory addresses ($ followed by digits or hex values)
@@ -462,7 +569,6 @@
                 ]
             }
         });
-
 
         monaco.editor.defineTheme("tis-theme", {
             base: "vs-dark",
@@ -602,44 +708,38 @@
                                 .InsertAsSnippet,
                         range: range
                     },
+                    {
+                        label: 'HALT',
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "JRO",
+                        insertTextRules:
+                            monaco.languages.CompletionItemInsertTextRule
+                                .InsertAsSnippet,
+                        range: range
+                    },
                 ];
                 return { suggestions: suggestions };
             },
         });
 
-let editor = monaco.editor.create(document.getElementById('editor'), {
-    value: [
-        '   MOV     1234        ACC         # Move 1234 to ACC register',
-        '   MOV     0xff1234    ACC         # Move 0xff1234 to ACC register',
-        '   MOV     $1234       ACC         # Move value at memory address 1234 to ACC register',
-        '   MOV     $0xff1234   ACC         # Move value at memory address 0xff1234 to ACC register',
-        '   MOV     ACC         $1234       # Move value in ACC register to memory address 1234',
-        '   MOV     ACC         $0xff1234   # Move value in ACC register to memory address 0xff1234',
-        '   SWP                             # Swap the values in ACC and BAK registers',
-        '   ADD     ACC',
-        '   MOV     ACC         $0x3',
-        '   MOV     BAK         ACC',
-        '   NOP',
-        '',
-        'EXAMPLE_LABEL:                     # Label definition',
-        '   MOV     0x3         ACC',
-        '   ADD     ACC',
-        '   JEZ EXAMPLE_LABEL',
-        '',
-        'FINISH:                            # Another label definition',
-        '   MOV     0x3         ACC',
-        '   ADD     ACC',
-        '   JGZ EXAMPLE_LABEL',
-    ].join('\n'),
-    language: 'tislang',
-    theme: 'tis-theme',
-    automaticLayout: true,
-    lineNumbers: (originalNumber) => originalNumber - 1
-});
-
-        EDITOR = editor;
-        MONACO = monaco;
-        MONACO_IS_READY = true;
+        // get source from "./prog_multiplication.asm file"
+        fetch("/prog_smiley.asm")
+            .then(response => response.text())
+            .then(data => {
+                let editor = monaco.editor.create(document.getElementById('editor'), {
+                    value: data,
+                    language: 'tislang',
+                    theme: 'tis-theme',
+                    automaticLayout: true,
+                    lineNumbers: (originalNumber) => originalNumber - 1
+                });
+        
+                EDITOR = editor;
+                MONACO = monaco;
+                MONACO_IS_READY = true;
+        
+                prepareAfterMonaco();
+            });
     });
 </script>
 </html>

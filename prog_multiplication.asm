@@ -31,4 +31,4 @@ MULTIPLY:
 
 
 END:
-	PUSH        R3              # Push the result onto the stack
+	PUSH        3              # Push the result onto the stack
