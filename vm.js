@@ -158,6 +158,7 @@ const REGISTERS = {
 };
 const STACK = new Stack();
 let PROGRAM = [];
+let AFTER_EXEC_EVENT_HANDLER = () => {};
 let STATE = "STOPPED";
 let intervalRunnerId = null;
 
@@ -195,10 +196,25 @@ function MOV(src, dst) {
 }
 function PUSH(src) {
     DEBUG_INST(`PUSH(${src.value})`);
+
+    if (src.differentiator === "REGISTER") {
+        STACK.push(src.value);
+    }
+    else if (src.differentiator === "LITERAL") {
+        STACK.push(src.value);
+    }
+    else {
+        throw new Error(`PUSH: Invalid source type | HALTING...`);
+    }
 }
 function POP() {
-    DEBUG_INST(`POP()`);
+    DEBUG_INST(`POP()`)
+    const value = STACK.pop();
+    if(value === undefined) {
+        throw new Error(`POP: Stack is empty | HALTING...`);
+    }
 
+    REGISTERS.ACC.value = value;
 }
 function SWP() {
     DEBUG_INST(`SWP()`);
@@ -298,7 +314,7 @@ function __prepare(machineCode) {
     PROGRAM = machineCode;
 }
 
-function _exec_execute() {
+async function _exec_execute() {
     while (REGISTERS.PRC.value < PROGRAM.length) {
         let program = PROGRAM[REGISTERS.PRC.value];
         if (program && program.instruction) {
@@ -323,7 +339,7 @@ function VM_stop() {
     console.log("VM Stopped");
 }
 
-function VM_continue() {
+async function VM_continue() {
     if(STATE === "RUNNING") {
         console.error("VM is already running");
         return;
@@ -332,16 +348,32 @@ function VM_continue() {
     STATE = "RUNNING";
     intervalRunnerId = setInterval(async () => {
         if(REGISTERS.PRC.value >= PROGRAM.length) {
-            return stop();
+            return VM_stop();
         }
+        
         try {
             _exec_execute();
+            AFTER_EXEC_EVENT_HANDLER();
         } catch (e) {
             console.error(e);
             console.error("HALTING...")
             VM_stop();
         }
-    }, 50);
+    }, 1);
+
+//     while(true) {
+//         if(REGISTERS.PRC.value >= PROGRAM.length) {
+//             return stop();
+//         }
+//         try {
+//             _exec_execute();
+//         } catch (e) {
+//             console.error(e);
+//             console.error("HALTING...")
+//             VM_stop();
+//         }
+//     }
+// }
 }
 
 function VM_start(machineCode) {

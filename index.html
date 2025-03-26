@@ -122,26 +122,6 @@
                 <div class="title">
                     Stack Memory
                 </div>
-                <div id="row">
-                    <div id="address">0</div>
-                    <div id="value">0x0000000000000000</div>
-                </div>
-                <div id="row">
-                    <div id="address">1</div>
-                    <div id="value">0x0000000000000000</div>
-                </div>
-                <div id="row">
-                    <div id="address">16</div>
-                    <div id="value">0x0000000000000000</div>
-                </div>
-                <div id="row">
-                    <div id="address">128</div>
-                    <div id="value">0x0000000000000000</div>
-                </div>
-                <div id="row">
-                    <div id="address">1024</div>
-                    <div id="value">0x0000000000000000</div>
-                </div>
             </div>
         </div>
     </div>
@@ -252,11 +232,13 @@
 
     #row #address {
         font-weight: bold;
+        width: 25%;
     }
 
     #row #value {
         border-left: 1px solid black;
         padding-left: 0.25rem;
+        width: 75%;
     }
 
     .top {
@@ -444,7 +426,7 @@
         };
 
         let decorations = EDITOR.createDecorationsCollection([]);
-        function highlightLine() {
+        async function highlightLine() {
             const line = REGISTERS.PRC.value;
             decorations.clear()
             decorations = EDITOR.createDecorationsCollection([
@@ -460,19 +442,34 @@
         }
 
         function updateStack() {
-            const tmp = `<div id="row">
-                <div id="address">0</div>
-                <div id="value">0x0000000000000000</div>
-            </div>`
+            const allCells = STACK.all();
+            
+            let str = `
+            <div id="stack">
+                <div class="title">
+                    Stack Memory
+                </div>
+            `;
+            let i=0;
+            for(const cell of allCells) {
+                let number = cell;
+                let hex = number.toString(16).padStart(4, '0');
+                let dec = number.toString().padStart(6, '0');
+                str += `<div id="row">
+                    <div id="address">${i}</div>
+                    <div id="value">&emsp13;${hex}&emsp13;&emsp13;|&emsp13;&emsp13;${dec}</div>
+                </div>`
+            }
+            str += `</div>`;
+
+            document.getElementById("stack").innerHTML = str;
         }
 
         REGISTERS.ACC.addHandler(async () => { 
             document.getElementById("REG-ACC-HOLDER").innerText = REGISTERS.ACC.value;
-            highlightLine();
         });
         REGISTERS.BAK.addHandler(async () => {
             document.getElementById("REG-BAK-HOLDER").innerText = REGISTERS.BAK.value;
-            highlightLine();
         });
         REGISTERS.GPR.addHandler(async () => {
             document.getElementById("REG-GPR-HOLDER").innerText = REGISTERS.GPR.value;
@@ -480,25 +477,23 @@
         });
         REGISTERS.DSP.addHandler(async () => {
             document.getElementById("REG-DSP-HOLDER").innerText = REGISTERS.DSP.value;
-            highlightLine();
         });
         REGISTERS.DSP.displayHandler = async (e) => {
             const {coordinate, r, g, b} = e;
             const cell = document.getElementById(`disp-pixel-${coordinate}`);
-            console.log(cell);
             if(cell) cell.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
         }
         REGISTERS.STC.addHandler(async () => {
             document.getElementById("REG-STC-HOLDER").innerText = REGISTERS.STC.value;
-            highlightLine();
         });
         REGISTERS.PRC.addHandler(async () => {
             document.getElementById("REG-PRC-HOLDER").innerText = REGISTERS.PRC.value;
-            highlightLine();
         });
-
-        STACK.push_event_driver = updateStack;
-        STACK.pop_event_driver = updateStack;
+        
+        AFTER_EXEC_EVENT_HANDLER = async () => {
+            highlightLine();
+            updateStack();
+        }
 
         /* PREPARE DISPLAY */ (() => {
             const container = document.getElementById('display');
@@ -723,7 +718,7 @@
         });
 
         // get source from "./prog_multiplication.asm file"
-        fetch("/prog_smiley.asm")
+        fetch("/prog_multiplication.asm")
             .then(response => response.text())
             .then(data => {
                 let editor = monaco.editor.create(document.getElementById('editor'), {
