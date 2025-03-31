@@ -481,8 +481,7 @@
         console.log(modal);
         modal.classList.toggle("active");
     };
-
-    console.log(document.getElementById("run-bp"))
+    console.log(document.getElementById("run-bp"));
 
     function prepareAfterMonaco() {
         const btn_run = document.getElementById("run");
@@ -622,7 +621,7 @@
         })();
 
         
-        fetch("../docs.md")
+        fetch("../README.md")
             .then(response => response.text())
             .then(data => {
                 const modalContent = document.getElementById("modal-content-docs");
