@@ -3,7 +3,42 @@
 This is a playground of assembly language Inspired by TIS-100 minimalistic Architecture
 
 ## 0. Table Of Contents
-> TODO: write table of content
+- [1. Registers](#1-registers)
+  - [1.0. ACC | Accumulator](#10-acc--accumulator)
+  - [1.1. BAK | Backup](#11-bak--backup)
+  - [1.2. GPR | General Purpose Register](#12-gpr--general-purpose-register)
+  - [1.3. DSP | Display Interface](#13-dsp--display-interface)
+  - [1.4. STC | Stack Counter](#14-stc--stack-counter)
+  - [1.5. PRC](#15-prc)
+- [2. Labels](#2-labels)
+- [3. Instruction Set](#3-instruction-set)
+  - [3.0. NOP](#30-nop)
+  - [3.1. MOV](#31-mov)
+  - [3.2. PUSH](#32-push)
+  - [3.3. POP](#33-pop)
+  - [3.4. SWP](#34-swp)
+  - [3.5. SAV](#35-sav)
+  - [3.6. ADD](#36-add)
+  - [3.7. SUB](#37-sub)
+  - [3.8. NEG](#38-neg)
+  - [3.9. NOT](#39-not)
+  - [3.10. AND](#310-and)
+  - [3.11. OR](#311-or)
+  - [3.12. XOR](#312-xor)
+  - [3.13. NAND](#313-nand)
+  - [3.14. NOR](#314-nor)
+  - [3.15. XNOR](#315-xnor)
+  - [3.16. SHR](#316-shr)
+  - [3.17. SHL](#317-shl)
+  - [3.18. JMP](#318-jmp)
+  - [3.19. JEZ](#319-jez)
+  - [3.20. JNZ](#320-jnz)
+  - [3.21. JGZ](#321-jgz)
+  - [3.22. JLZ](#322-jlz)
+  - [3.23. JRO](#323-jro)
+  - [3.24. HALT](#324-halt)
+- [3. Stack Memory](#3-stack-memory)
+- [4. Display](#4-display)
 
 ## 1. Registers
 ### 1.0. ACC | Accumulator
