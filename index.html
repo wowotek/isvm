@@ -621,7 +621,7 @@
         })();
 
         
-        fetch("../README.md")
+        fetch("https://raw.githubusercontent.com/wowotek/isvm/refs/heads/production/README.md")
             .then(response => response.text())
             .then(data => {
                 const modalContent = document.getElementById("modal-content-docs");
@@ -834,7 +834,7 @@
         });
 
         // get source from "./prog_multiplication.asm file"
-        fetch("../prog_math.asm")
+        fetch("https://raw.githubusercontent.com/wowotek/isvm/refs/heads/production/prog_math.asm")
             .then(response => response.text())
             .then(data => {
                 let editor = monaco.editor.create(document.getElementById('editor'), {
