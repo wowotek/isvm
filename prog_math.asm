@@ -10,11 +10,16 @@
 
 # =-=-=-=-= Program to multiply two numbers =-=-=-=-=
 # Prepare 2 Arguments into Stack
-    PUSH        8               # Push 5 onto the stack
-	PUSH        64               # Push 3 onto the stack
+PUSH        64
+PUSH        8
+JMP         MULTIPLY
+	FINISH_MULTIPLY:
+PUSH		333
+PUSH		333
+HALT
 
 
-# Subroutine of Multiply 2 value from Stack
+# =-=-=-=-= Multiply 2 value from Stack =-=-=-=-=
 MULTIPLY:
 	# Prepare:
 	#   - Assume ACC and BAK is empty / random value in this context, since this subroutine can be called anytime
@@ -28,17 +33,16 @@ MULTIPLY:
 	SUB 	1
 	SWP
 
-	__MULTIPLY_LOOP:
-		ADD		GPR
-		SWP
-		SUB		1
-		JEZ		__MULTIPLY_END
-		SWP
-		JMP		__MULTIPLY_LOOP
+__MULTIPLY_LOOP:
+	ADD		GPR
+	SWP
+	SUB		1
+	JEZ		__MULTIPLY_END
+	SWP
+	JMP		__MULTIPLY_LOOP
 
-	__MULTIPLY_END:
-		SWP
-		SAV
-		PUSH	ACC
-	
-HALT
+__MULTIPLY_END:
+	SWP
+	SAV
+	PUSH	ACC
+	JMP		FINISH_MULTIPLY

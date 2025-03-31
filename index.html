@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/editor/editor.main.js" integrity="sha512-Rvm80pldXwjZQPHcW9Dx3U8pygTafC25yXwrxrPC6ZuNVgBsR2BN2pFAU2ImvYYeFcUaKo7bRcf7KxHD+LMp6w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"
         integrity="sha512-ZG31AN9z/CQD1YDDAK4RUAvogwbJHv6bHrumrnMLzdCrVu4HeAqrUX7Jsal/cbUwXGfaMUNmQU04tQ8XXl5Znw=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -107,6 +107,8 @@
             </button>
         </div>
     </div>
+
+    <!-- Actual Content -->
     <div class="content">
         <div id="editor"></div>
         <div class="memories">
@@ -125,9 +127,27 @@
             </div>
         </div>
     </div>
+
+    <!-- Popups -->
+    <div class="modal active" id="modal-notif">
+        <div class="modal-content">
+            <article id="modal-content-docs" class="modal-content-content">
+                Loading...
+            </article>
+            <button class="control" id="close-modal" style="position: absolute; top: -16px; right: 0; height: 30px; border: 0;">
+                <span class="icon" style="font-size: 14px">
+                    <i class="fa-solid fa-close"></i>
+                </span>
+                <span class="hotkey">esc</span>
+            </button>
+        </div>
+    </div>
 </body>
 
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
     html,
     body {
         position: absolute;
@@ -139,6 +159,87 @@
         max-height: 100vh;
         margin: 0;
         padding: 0;
+    }
+
+    pre {
+        margin-left: 2rem;
+        padding: 0.75rem;
+        min-width: 75%;
+        max-width: 85%;
+        border: 1px solid #ccc;
+        background-color: #fdfded;
+        overflow-x: auto;
+        filter: drop-shadow(0 0 5px #00000022);
+        border-radius: 8px;
+        font-size: small;
+    }
+    
+    pre code, code {
+        background-color: #fdfded;
+        font-family: 'Roboto Mono', 'Courier New', Courier, monospace;
+    }
+
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.75);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+
+        justify-content: center;
+        align-items: center;
+        display: none;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal .modal-content {
+        width: 66%;
+        height: 75%;
+        background-color: #ededed;
+        padding: 0.25rem;
+        padding-top: 0;
+        margin: 0;
+        position: relative;
+        border-radius: 10px;
+    }
+
+    .modal-content-content {
+        margin: 1rem;
+        padding-top: 0;
+        margin-right: 0rem;
+        padding-right: 1rem;
+        overflow-y: scroll;
+        max-height: calc(100% - 2rem);
+        font-family: 'Noto Sans', sans-serif;
+    }
+
+    .modal-content-content h1 {
+        text-align: center;
+    }
+
+    .modal-content-content h3 {
+        margin-bottom: 0.33rem;
+    }
+
+    .modal-content-content p {
+        margin-top: 0;
+        padding-top: 0;
+    }
+
+    .modal-content-content blockquote {
+        background-color: #f0f0f0;
+        border-left: 4px solid #ccc;
+        padding-left: 1rem;
+        color: #666;
+        font-style: italic;
+        text-shadow: #66666622 1px 1px 0;
     }
 
     .content {
@@ -309,7 +410,7 @@
         gap: 0.33rem;
     }
 
-    .controls .control {
+    .control {
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -319,24 +420,24 @@
         max-width: 125px;
         border-radius: 8px;
         border: 1px solid black;
-        background: none;
+        background-color: #ededed;
         position: relative;
 
         transition: 250ms cubic-bezier(0.075, 0.82, 0.165, 1)
     }
 
-    .controls .control .label {
+    .control .label {
         font-size: 12px;
         font-weight: bold;
         margin-top: 4px;
     }
 
-    .controls .control .icon {
+    .control .icon {
         margin-right: 0;
         font-size: 18px;
     }
 
-    .controls .control .hotkey {
+    .control .hotkey {
         position: absolute;
         top: 1px;
         right: 4px;
@@ -344,10 +445,10 @@
         font-weight: bold;
     }
 
-    .controls .control:hover {
-        background: #f0f0f0;
+    .control:hover {
+        background: #978585;
     }
-    .controls .control:active {
+    .control:active {
         background: #000000;
         color: #ffffff;
         transition: 150ms cubic-bezier(0.075, 0.82, 0.165, 1);
@@ -375,6 +476,14 @@
     let EDITOR = null;
     let MONACO = null;
 
+    document.getElementById("close-modal").onclick = async () => {
+        const modal = document.getElementById("modal-notif");
+        console.log(modal);
+        modal.classList.toggle("active");
+    };
+
+    console.log(document.getElementById("run-bp"))
+
     function prepareAfterMonaco() {
         const btn_run = document.getElementById("run");
         const btn_pause = document.getElementById("pause");
@@ -386,18 +495,14 @@
         const btn_saveram = document.getElementById("save-ram");
         const btn_loadram = document.getElementById("load-ram");
     
-        setTimeout(async () => {
-            const source = EDITOR.getValue();
-            const machineCode = assembleSource(source);
-            VM_start(machineCode);
-            console.log(PROGRAM)
-        }, 1000);
-        btn_run.onclick = () => {
-            // get source from editor
-            console.log("Running");
-            const source = EDITOR.getValue();
-            const machineCode = assembleSource(source);
-            VM_start(machineCode);
+        btn_run.onclick = async () => {
+            setTimeout(async () => {
+                // get source from editor
+                console.log("Running");
+                const source = EDITOR.getValue();
+                const machineCode = assembleSource(source);
+                VM_start(machineCode);
+            }, 100)
         };
         btn_pause.onclick = () => {
             if(STATE === "RUNNING") VM_stop();
@@ -408,12 +513,15 @@
         };
         btn_reset.onclick = () => {
             VM_reset();
+            VM_reset();
         };
         btn_runbp.onclick = () => {
     
         };
-        btn_docs.onclick = () => {
-    
+        btn_docs.onclick = async () => {
+            const modal = document.getElementById("modal-notif");
+            console.log(modal);
+            modal.classList.toggle("active");
         };
         btn_save.onclick = () => {
     
@@ -443,7 +551,7 @@
 
         function updateStack() {
             const allCells = STACK.all();
-            
+
             let str = `
             <div id="stack">
                 <div class="title">
@@ -484,13 +592,13 @@
             if(cell) cell.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
         }
         REGISTERS.STC.addHandler(async () => {
-            document.getElementById("REG-STC-HOLDER").innerText = REGISTERS.STC.value;
         });
         REGISTERS.PRC.addHandler(async () => {
             document.getElementById("REG-PRC-HOLDER").innerText = REGISTERS.PRC.value;
         });
         
         AFTER_EXEC_EVENT_HANDLER = async () => {
+            document.getElementById("REG-STC-HOLDER").innerText = STACK.length;
             highlightLine();
             updateStack();
         }
@@ -512,6 +620,15 @@
     
             container.innerHTML = row;
         })();
+
+        
+        fetch("../docs.md")
+            .then(response => response.text())
+            .then(data => {
+                const modalContent = document.getElementById("modal-content-docs");
+                modalContent.innerHTML = marked.parse(data);
+            });
+
     }
 
     require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@latest/min/vs' } });
@@ -539,7 +656,7 @@
                     [/^\s*([A-Za-z_][\w]*)(:)/, ['type.identifier', 'delimiter']],
 
                     // Keywords (instructions)
-                    [/\b(?:NOP|MOV|PUSH|POP|SWP|SAV|ADD|SUB|NEG|JMP|JEZ|JNZ|JGZ|JLZ|JRO|HALT|nop|mov|push|pop|swp|sav|add|sub|neg|jmp|jez|jnz|jgz|jlz|jro|halt)\b/, 'keyword'],
+                    [/\b(?:NOP|MOV|PUSH|POP|SWP|SAV|ADD|SUB|NEG|NOT|AND|OR|XOR|NAND|NOR|XNOR|SHR|SHL|JMP|JEZ|JNZ|JGZ|JLZ|JRO|HALT|nop|mov|push|pop|swp|sav|add|sub|neg|not|and|or|xor|nand|nor|xnor|shr|shl|jmp|jez|jnz|jgz|jlz|jro|halt)\b/, 'keyword'],
 
                     // Label references (after JMP, JEZ, JGZ, etc.)
                     [/\b(?:JMP|JEZ|JNZ|JGZ|JLZ|JRO|jmp|jez|jnz|jgz|jlz|jro)\s+([A-Za-z_][\w]*)\b/, ['keyword', 'type.identifier']],
@@ -718,7 +835,7 @@
         });
 
         // get source from "./prog_multiplication.asm file"
-        fetch("/prog_multiplication.asm")
+        fetch("../prog_math.asm")
             .then(response => response.text())
             .then(data => {
                 let editor = monaco.editor.create(document.getElementById('editor'), {

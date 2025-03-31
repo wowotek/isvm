@@ -146,6 +146,10 @@ class Stack{
     all() {
         return this.stack.map(x => x);
     }
+
+    get length() {
+        return this.stack.length;
+    }
 };
 
 const REGISTERS = {
@@ -250,6 +254,82 @@ function NEG() {
     DEBUG_INST(`NEG()`);
     REGISTERS.ACC.value = limitToSigned16Bit(-REGISTERS.ACC.value);
 }
+function NOT() {
+    DEBUG_INST(`NEG()`);
+    REGISTERS.ACC.value = limitToSigned16Bit(~REGISTERS.ACC.value);
+}
+function AND(SRC) {
+    DEBUG_INST(`AND(${SRC.value})`);
+    if (SRC.differentiator === "LABEL") {
+        throw new Error(`AND: Invalid source type | HALTING...`);
+    }
+
+    const result = REGISTERS.ACC.value & SRC.value;
+    REGISTERS.ACC.value = limitToSigned16Bit(result);
+}
+function OR(SRC) {
+    DEBUG_INST(`OR(${SRC.value})`);
+    if (SRC.differentiator === "LABEL") {
+        throw new Error(`OR: Invalid source type | HALTING...`);
+    }
+
+    const result = REGISTERS.ACC.value | SRC.value;
+    REGISTERS.ACC.value = limitToSigned16Bit(result);
+}
+function XOR(SRC) {
+    DEBUG_INST(`XOR(${SRC.value})`);
+    if (SRC.differentiator === "LABEL") {
+        throw new Error(`XOR: Invalid source type | HALTING...`);
+    }
+
+    const result = REGISTERS.ACC.value ^ SRC.value;
+    REGISTERS.ACC.value = limitToSigned16Bit(result);
+}
+function NAND(SRC) {
+    DEBUG_INST(`NAND(${SRC.value})`);
+    if (SRC.differentiator === "LABEL") {
+        throw new Error(`NAND: Invalid source type | HALTING...`);
+    }
+
+    const result = ~(REGISTERS.ACC.value & SRC.value);
+    REGISTERS.ACC.value = limitToSigned16Bit(result);
+}
+function NOR(SRC) {
+    DEBUG_INST(`NOR(${SRC.value})`);
+    if (SRC.differentiator === "LABEL") {
+        throw new Error(`NOR: Invalid source type | HALTING...`);
+    }
+
+    const result = ~(REGISTERS.ACC.value | SRC.value);
+    REGISTERS.ACC.value = limitToSigned16Bit(result);
+}
+function XNOR(SRC) {
+    DEBUG_INST(`XNOR(${SRC.value})`);
+    if (SRC.differentiator === "LABEL") {
+        throw new Error(`XNOR: Invalid source type | HALTING...`);
+    }
+
+    const result = ~(REGISTERS.ACC.value ^ SRC.value);
+    REGISTERS.ACC.value = limitToSigned16Bit(result);
+}
+function SHR(SRC) {
+    DEBUG_INST(`SHR(${SRC.value})`);
+    if (SRC.differentiator === "LABEL") {
+        throw new Error(`SHR: Invalid source type | HALTING...`);
+    }
+
+    const result = REGISTERS.ACC.value >> SRC.value;
+    REGISTERS.ACC.value = limitToSigned16Bit(result);
+}
+function SHL(SRC) {
+    DEBUG_INST(`SHL(${SRC.value})`);
+    if (SRC.differentiator === "LABEL") {
+        throw new Error(`SHL: Invalid source type | HALTING...`);
+    }
+
+    const result = REGISTERS.ACC.value << SRC.value;
+    REGISTERS.ACC.value = limitToSigned16Bit(result);
+}
 function JMP(label) {
     DEBUG_INST(`JMP(${label.name}|${label.value})`);
     // find the lineNumber
@@ -282,11 +362,10 @@ function JLZ(label) {
 function JRO(offset) {
     DEBUG_INST(`JRO(${offset.value})`);
     // limit to program length
-    const limitOffset = limitToUnsigned16Bit(REGISTERS.PRC.value + limitOffset);
     // if its negative, go back
     // if its positive, go forward
     // if its too much, roll to the first program
-    REGISTERS.PRC.value = limitOffset % PROGRAM.length;
+    REGISTERS.PRC.value = (REGISTERS.PRC.value + offset.value) % PROGRAM.length;
 }
 function HALT() {
     DEBUG_INST(`HALT()`);
@@ -314,7 +393,7 @@ function __prepare(machineCode) {
     PROGRAM = machineCode;
 }
 
-async function _exec_execute() {
+function _exec_execute() {
     while (REGISTERS.PRC.value < PROGRAM.length) {
         let program = PROGRAM[REGISTERS.PRC.value];
         if (program && program.instruction) {
@@ -339,14 +418,14 @@ function VM_stop() {
     console.log("VM Stopped");
 }
 
-async function VM_continue() {
+function VM_continue() {
     if(STATE === "RUNNING") {
         console.error("VM is already running");
         return;
     }
 
     STATE = "RUNNING";
-    intervalRunnerId = setInterval(async () => {
+    intervalRunnerId = setInterval(() => {
         if(REGISTERS.PRC.value >= PROGRAM.length) {
             return VM_stop();
         }
@@ -355,9 +434,9 @@ async function VM_continue() {
             _exec_execute();
             AFTER_EXEC_EVENT_HANDLER();
         } catch (e) {
+            VM_stop();
             console.error(e);
             console.error("HALTING...")
-            VM_stop();
         }
     }, 1);
 
