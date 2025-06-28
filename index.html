@@ -483,7 +483,7 @@
     };
     console.log(document.getElementById("run-bp"));
 
-    function prepareAfterMonaco() {
+    async function prepareAfterMonaco() {
         const btn_run = document.getElementById("run");
         const btn_pause = document.getElementById("pause");
         const btn_step = document.getElementById("step");
@@ -602,31 +602,15 @@
             updateStack();
         }
 
-        /* PREPARE DISPLAY */ (() => {
-            const container = document.getElementById('display');
-            let row = "";
-    
-            for(let i=0; i<256; i++) {
-                let cells = "<div class='row'>";
-                for(let j=0; j<256; j++) {
-                    const coord = i * 256 + j;
-                    cells += `<div class='cell' id='disp-pixel-${coord}'></div>`;
-                }
-                cells += "</div>";
-    
-                row += cells;
-            }
-    
-            container.innerHTML = row;
-        })();
-
         
-        fetch("https://raw.githubusercontent.com/wowotek/isvm/refs/heads/production/README.md")
-            .then(response => response.text())
-            .then(data => {
-                const modalContent = document.getElementById("modal-content-docs");
-                modalContent.innerHTML = marked.parse(data);
-            });
+        setTimeout(async () => {
+            fetch("https://raw.githubusercontent.com/wowotek/isvm/refs/heads/production/README.md")
+                .then(response => response.text())
+                .then(data => {
+                    const modalContent = document.getElementById("modal-content-docs");
+                    modalContent.innerHTML = marked.parse(data);
+                });
+        }, 150);
 
     }
 
@@ -642,7 +626,7 @@
         { type: 'text/javascript' }
     ));
 
-    require(["vs/editor/editor.main"], function () {
+    require(["vs/editor/editor.main"], async function () {
         monaco.languages.register({ id: 'tislang' });
 
         // Register a tokens provider for the language
@@ -834,23 +818,28 @@
         });
 
         // get source from "./prog_multiplication.asm file"
-        fetch("https://raw.githubusercontent.com/wowotek/isvm/refs/heads/production/prog_math.asm")
-            .then(response => response.text())
-            .then(data => {
-                let editor = monaco.editor.create(document.getElementById('editor'), {
-                    value: data,
-                    language: 'tislang',
-                    theme: 'tis-theme',
-                    automaticLayout: true,
-                    lineNumbers: (originalNumber) => originalNumber - 1
+        setTimeout(() => {
+            fetch("https://raw.githubusercontent.com/wowotek/isvm/refs/heads/production/prog_math.asm")
+                .then(async response => response.text())
+                .then(async data => {
+                    const dom_editor = document.getElementById('editor')
+                    let editor = monaco.editor.create(document.getElementById('editor'), {
+                        value: data,
+                        language: 'tislang',
+                        theme: 'tis-theme',
+                        automaticLayout: true,
+                        lineNumbers: (originalNumber) => originalNumber - 1
+                    });
+            
+                    EDITOR = editor;
+                    MONACO = monaco;
+                    MONACO_IS_READY = true;
+                    
+                    setTimeout(async () => {
+                        prepareAfterMonaco();
+                    }, 150);
                 });
-        
-                EDITOR = editor;
-                MONACO = monaco;
-                MONACO_IS_READY = true;
-        
-                prepareAfterMonaco();
-            });
+        }, 150);
     });
 </script>
 </html>

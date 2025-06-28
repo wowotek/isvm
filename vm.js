@@ -438,7 +438,7 @@ function VM_continue() {
             console.error(e);
             console.error("HALTING...")
         }
-    }, 1);
+    }, 46);
 
 //     while(true) {
 //         if(REGISTERS.PRC.value >= PROGRAM.length) {
